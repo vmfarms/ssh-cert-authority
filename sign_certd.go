@@ -167,6 +167,10 @@ func (h *certRequestHandler) createSigningRequest(rw http.ResponseWriter, req *h
 func (h *certRequestHandler) saveSigningRequest(config ssh_ca_util.SignerdConfig, environment, reason, requestIDStr string, requestSerial uint64, cert *ssh.Certificate) error {
 	requesterFp := ssh_ca_util.MakeFingerprint(cert.SignatureKey.Marshal())
 
+	if config.MaxCertLifetime != 0 && cert.ValidBefore > uint64(time.Now().Add(time.Duration(config.MaxCertLifetime)).Unix()) {
+		return fmt.Errorf("Certificate is valid longer than maximum permitted by configuration %d", config.MaxCertLifetime)
+	}
+
 	// We override keyid here so that its a server controlled value. Instead of
 	// letting a requester attempt to spoof it.
 	var ok bool
